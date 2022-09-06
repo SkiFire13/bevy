@@ -780,9 +780,9 @@ impl<'a, T: Component> RemovedComponents<'a, T> {
     }
 }
 
-impl<'a, T: Component> IntoIterator for &'a RemovedComponents<'a, T> {
+impl<'a, 'b, T: Component> IntoIterator for &'a RemovedComponents<'b, T> {
     type Item = Entity;
-    type IntoIter = std::iter::Cloned<std::slice::Iter<'a, Entity>>;
+    type IntoIter = std::iter::Cloned<std::slice::Iter<'b, Entity>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
