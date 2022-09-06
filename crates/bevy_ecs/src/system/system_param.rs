@@ -775,7 +775,7 @@ pub struct RemovedComponents<'a, T: Component> {
 
 impl<'a, T: Component> RemovedComponents<'a, T> {
     /// Returns an iterator over the entities that had their `T` [`Component`] removed.
-    pub fn iter(&self) -> std::iter::Cloned<std::slice::Iter<'_, Entity>> {
+    pub fn iter(&self) -> std::iter::Cloned<std::slice::Iter<'a, Entity>> {
         self.world.removed_with_id(self.component_id)
     }
 }
