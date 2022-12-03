@@ -1,5 +1,4 @@
-use std::sync::Arc;
-use thread_local_object::ThreadLocal;
+use fragile::Fragile;
 
 use crate::prelude::World;
 use crate::{self as bevy_ecs, prelude::Component};
@@ -37,70 +36,30 @@ impl<'w, 's> SystemParamFetch<'w, 's> for MainThreadState {
 }
 
 #[derive(Resource, Component)]
-pub struct Tls<T: 'static>(Arc<ThreadLocal<T>>);
+pub struct NonSend<T>(Fragile<T>);
 
-impl<T> Tls<T> {
+impl<T> NonSend<T> {
     pub fn new(value: T) -> Self {
-        let tls = Arc::new(ThreadLocal::new());
-        tls.set(value);
-        Tls(tls)
+        NonSend(Fragile::new(value))
     }
 
-    pub fn set(&self, value: T) -> Option<T> {
-        self.0.set(value)
+    pub fn into_inner(self) -> T {
+        self.0.into_inner()
     }
 
-    pub fn remove(&mut self) -> Option<T> {
-        self.0.remove()
-    }
-
-    pub fn get<F, R>(&self, f: F) -> R
-    where
-        F: FnOnce(&T) -> R,
-    {
-        self.0.get(|t|
-                // TODO: add typename to error message. possibly add reference to NonSend System param
-                f(t.unwrap_or_else(||
-                    panic!(
-                        "Requested non-send resource {} does not exist on this thread.
-                        You may be on the wrong thread or need to call .set on the resource.",
-                        std::any::type_name::<R>()
-                    )
-                )))
+    pub fn get(&self) -> &T {
+        self.0.get()
     }
 
     // this takes an &mut self to trigger change detection when we get a mutable value out of the tls
-    pub fn get_mut<F, R>(&mut self, f: F) -> R
-    where
-        F: FnOnce(&mut T) -> R,
-    {
-        self.0.get_mut(|t|
-                // TODO: add typename to error message. possibly add reference to NonSend System param
-                f(t.unwrap_or_else(||
-                    panic!(
-                    "Requested non-send resource {} does not exist on this thread.
-                        You may be on the wrong thread or need to call .set on the resource.",
-                        std::any::type_name::<R>()
-                    )
-                )))
-    }
-}
-
-// TODO: This drop impl is needed because AudioOutput was panicking when
-// it was being dropped when the thread local storage was being dropped.
-// This tries to drop the resource on the current thread, which fixes
-// things for when the world is on the main thread, but would probably
-// break if the world is moved to a different thread. We should figure
-// out a more robust way of dropping the resource instead.
-impl<T: 'static> Drop for Tls<T> {
-    fn drop(&mut self) {
-        self.remove();
+    pub fn get_mut(&mut self) -> &mut T {
+        self.0.get_mut()
     }
 }
 
 // SAFETY: pretty sure this is safe as ThreadLocal just wraps a usize and a phantom data
 // and the usize is only written to on the call to ThreadLocal::new()
-unsafe impl<T> Send for Tls<T> {}
+unsafe impl<T> Send for NonSend<T> {}
 // SAFETY: pretty sure this is safe as ThreadLocal just wraps a usize and a phantom data
 // and the usize is only written to on the call to ThreadLocal::new()
-unsafe impl<T> Sync for Tls<T> {}
+unsafe impl<T> Sync for NonSend<T> {}

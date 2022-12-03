@@ -107,7 +107,7 @@ mod tests {
 
     use crate::prelude::StageLabel;
 
-    use crate::system::{MainThread, Tls};
+    use crate::system::{MainThread, NonSend};
     use crate::{
         self as bevy_ecs,
         archetype::{ArchetypeComponentId, Archetypes},
@@ -513,12 +513,12 @@ mod tests {
         world.insert_resource(SystemRan::No);
         struct NotSend1(std::rc::Rc<i32>);
         struct NotSend2(std::rc::Rc<i32>);
-        world.insert_resource(Tls::new(NotSend1(std::rc::Rc::new(0))));
+        world.insert_resource(NonSend::new(NotSend1(std::rc::Rc::new(0))));
 
         fn sys(
             _marker: MainThread,
-            op: Option<Res<Tls<NotSend1>>>,
-            mut _op2: Option<ResMut<Tls<NotSend2>>>,
+            op: Option<Res<NonSend<NotSend1>>>,
+            mut _op2: Option<ResMut<NonSend<NotSend2>>>,
             mut system_ran: ResMut<SystemRan>,
         ) {
             op.expect("op to exist");
@@ -538,13 +538,13 @@ mod tests {
         struct NotSend1(std::rc::Rc<i32>);
         struct NotSend2(std::rc::Rc<i32>);
 
-        world.insert_resource(Tls::new(NotSend1(std::rc::Rc::new(1))));
-        world.insert_resource(Tls::new(NotSend2(std::rc::Rc::new(2))));
+        world.insert_resource(NonSend::new(NotSend1(std::rc::Rc::new(1))));
+        world.insert_resource(NonSend::new(NotSend2(std::rc::Rc::new(2))));
 
         fn sys(
             _marker: MainThread,
-            _op: Res<Tls<NotSend1>>,
-            mut _op2: ResMut<Tls<NotSend2>>,
+            _op: Res<NonSend<NotSend1>>,
+            mut _op2: ResMut<NonSend<NotSend2>>,
             mut system_ran: ResMut<SystemRan>,
         ) {
             *system_ran = SystemRan::Yes;

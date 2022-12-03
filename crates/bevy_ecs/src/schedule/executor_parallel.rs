@@ -401,7 +401,7 @@ mod tests {
         schedule::{
             executor_parallel::scheduling_event::*, SingleThreadedExecutor, Stage, SystemStage,
         },
-        system::{MainThread, Query, Res, ResMut, Resource, Tls},
+        system::{MainThread, NonSend, Query, Res, ResMut, Resource},
         world::World,
     };
 
@@ -536,11 +536,9 @@ mod tests {
     fn non_send_resource() {
         use std::thread;
         let mut world = World::new();
-        world.insert_resource(Tls::new(thread::current().id()));
-        fn non_send(_marker: MainThread, thread_id: Res<Tls<thread::ThreadId>>) {
-            thread_id.get(|thread_id| {
-                assert_eq!(thread::current().id(), *thread_id);
-            });
+        world.insert_resource(NonSend::new(thread::current().id()));
+        fn non_send(_marker: MainThread, thread_id: Res<NonSend<thread::ThreadId>>) {
+            assert_eq!(thread::current().id(), *thread_id.get());
         }
         fn empty() {}
         let mut stage = SystemStage::parallel()
