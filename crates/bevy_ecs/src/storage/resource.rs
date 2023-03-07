@@ -251,8 +251,7 @@ impl<const SEND: bool> Resources<SEND> {
     /// Fetches or initializes a new resource and returns back it's underlying column.
     ///
     /// # Panics
-    /// Will panic if `component_id` is not valid for the provided `components`
-    /// If `SEND` is false, this will panic if `component_id`'s `ComponentInfo` is not registered as being `Send` + `Sync`.
+    /// Will panic if `component_id`'s `ComponentInfo` is registered as being `Send` + `Sync` and `SEND` is `false` or `component_id`'s `ComponentInfo` is registered as not being `Send` + `Sync` and `SEND` is `true`.
     pub(crate) fn initialize_with(
         &mut self,
         component_id: ComponentId,
@@ -262,7 +261,17 @@ impl<const SEND: bool> Resources<SEND> {
         self.resources.get_or_insert_with(component_id, || {
             let component_info = components.get_info(component_id).unwrap();
             if SEND {
-                assert!(component_info.is_send_and_sync());
+                assert!(
+                    component_info.is_send_and_sync(),
+                    "Resource {} has already been initialized as non-`Send`",
+                    component_info.name()
+                );
+            } else {
+                assert!(
+                    !component_info.is_send_and_sync(),
+                    "Resource {} has already been initialized as `Send`",
+                    component_info.name()
+                );
             }
             ResourceData {
                 column: ManuallyDrop::new(Column::with_capacity(component_info, 1)),
