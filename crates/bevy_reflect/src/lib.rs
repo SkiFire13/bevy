@@ -512,6 +512,9 @@ pub mod serde;
 pub mod std_traits;
 pub mod utility;
 
+#[doc(hidden)]
+pub mod autoref_helpers;
+
 pub mod prelude {
     pub use crate::std_traits::*;
     #[doc(hidden)]
@@ -2329,6 +2332,18 @@ bevy_reflect::tests::Test {
         assert_impl_all!(Struct: Reflect);
         assert_impl_all!(TupleStruct: Reflect);
         assert_impl_all!(Enum: Reflect);
+    }
+
+    #[test]
+    fn derive_reflect_spec_registration() {
+        #[derive(Reflect, Default, Serialize, Deserialize)]
+        struct Foo;
+
+        let registration = Foo::get_type_registration();
+
+        assert!(registration.data::<ReflectDefault>().is_some());
+        assert!(registration.data::<ReflectSerialize>().is_some());
+        assert!(registration.data::<ReflectDeserialize>().is_some());
     }
 
     #[cfg(feature = "glam")]
