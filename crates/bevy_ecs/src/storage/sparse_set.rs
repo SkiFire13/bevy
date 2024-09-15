@@ -566,7 +566,7 @@ impl<I: SparseSetIndex, V> SparseSet<I, V> {
 /// Ideally, the `usize` values should be very small (ie: incremented starting from
 /// zero), as the number of bits needed to represent a `SparseSetIndex` in a `FixedBitSet`
 /// is proportional to the **value** of those `usize`.
-pub trait SparseSetIndex: Clone + PartialEq + Eq + Hash {
+pub trait SparseSetIndex: Copy + PartialEq + Eq + Hash {
     /// Gets the sparse set index corresponding to this instance.
     fn sparse_set_index(&self) -> usize;
     /// Creates a new instance of this type with the specified index.
